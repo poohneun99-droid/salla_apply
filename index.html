@@ -146,34 +146,32 @@ footer b{color:var(--ink)}
 <summary>수업 커리큘럼</summary>
 <div class="more">
 <div class="subj">
-<div class="grp elem">쏼라쏼라 커리큘럼 <small>초1~초4</small></div>
+<div class="grp elem">쏼라쏼라 커리큘럼 <small>초1~초6</small></div>
 <div class="elem"><span>초1 · 주 2회 · 파닉스 반</span>
 <ul>
 <li>수업 구성: 파닉스</li>
 <li>파닉스만 합니다. 다른 건 하지 않습니다.</li>
 <li>혼자 유창하게 읽게 만들어 놓고, 그다음 본격적으로 시작합니다.</li>
 </ul></div>
-<div class="elem"><span>초1~4 · 주 3회</span>
+<div class="elem"><span>초1~6 · 주 3회</span>
 <ul>
 <li>파닉스 이후 레벨: 리딩 스킬 · 스피킹 · 원서</li>
 <li>파닉스 제외 2년차 이상: 리딩 스킬 · 라이팅과 문법 · 원서</li>
 <li>레벨에 따라 다르게 접근합니다.</li>
 </ul></div>
-<div class="grp">더블에스 커리큘럼 <small>초5~중3</small></div>
-<div><span>초5~6 · 주 2회 · 2시간</span>
-<ul>
-<li>수업 구성: 리딩 · 문법 / 보카 · 원서</li>
-</ul></div>
-<div><span>중1~3 · 주 2회 · 2시간</span>
-<ul>
-<li>평소: 고등학교 모의고사 유형의 리딩 · 입시를 위한 문법</li>
-<li>내신 기간: 시험 준비</li>
-</ul></div>
-<div><span>공통</span>
+<div class="elem"><span>공통</span>
 <ul>
 <li>일정 레벨 이상이 되면, 리딩서를 기반으로 한 스피킹과 라이팅을 보장합니다.</li>
 <li>숙제가 많고, 매 수업 테스트가 있습니다.</li>
 <li>원서 1만 권을 소장하고 있고, 일주일에 5~20권 대여 가능합니다.</li>
+</ul></div>
+<div class="grp dsc">더블에스 커리큘럼 <small>초5~중3</small></div>
+<div class="dsc"><span>초5~중3 · 주 2회</span>
+<ul>
+<li>입시 전문 강사 1회 + 원장 1회 수업</li>
+<li>독해 · 문법 · 보카를 아주 치밀하게 다집니다.</li>
+<li>중학교에 가서 내신에 크게 힘을 쏟지 않아도 점수가 나오는 실력을 만듭니다.</li>
+<li>고등학교 모의고사까지 내다보고 미리 준비합니다.</li>
 </ul></div>
 </div>
 </div>
@@ -206,11 +204,14 @@ var GRADES = [['초1','1학년'],['초2','2학년'],['초3','3학년'],['초4','
 var FIXED_START = {'초4':'3:40','초5':'5:30','초6':'5:30','중1':'5:30','중2':'5:30','중3':'5:30'};
 var DS_ONLY = /[?&]ds\b/.test(location.search); // 더블에스 전용 링크: 주소 끝에 ?ds
 var DS_GRADES = ['초5','초6','중1','중2','중3'];
+var SALLA_GRADES = ['초1','초2','초3','초4','초5','초6'];
 function setBrand(ds){
  $('logo-ss').hidden = ds; $('logo-ds').hidden = !ds;
  $('brand-name').textContent = ds ? '더블에스 영어' : '쏼라쏼라 어학원';
  document.title = (ds ? '더블에스 영어' : '쏼라쏼라 어학원') + ' · 상담 신청';
- document.querySelectorAll('.elem').forEach(function(el){ el.hidden = ds; });
+ var subj=document.querySelector('.subj'); var ds_=[].slice.call(subj.querySelectorAll('.dsc'));
+ if (ds) ds_.reverse().forEach(function(el){ subj.insertBefore(el, subj.firstChild); });
+ else ds_.forEach(function(el){ subj.appendChild(el); });
 }
 var classes = FALLBACK, full = [], grade = null, exp = null;
 var $ = function(id){return document.getElementById(id)};
@@ -220,7 +221,7 @@ if (API_URL) fetch(API_URL).then(function(r){return r.json()}).then(function(d){
  if (d && Array.isArray(d.classes)) { classes = d.classes; full = Array.isArray(d.full) ? d.full : []; if (grade) pick(grade); }
 }).catch(function(){});
 
-if (DS_ONLY) GRADES = GRADES.filter(function(g){ return DS_GRADES.indexOf(g[0])>=0; });
+GRADES = GRADES.filter(function(g){ return (DS_ONLY ? DS_GRADES : SALLA_GRADES).indexOf(g[0])>=0; });
 $('grades').innerHTML = GRADES.map(function(g){
  return '<button type="button" class="chip" aria-pressed="false" data-g="'+g[0]+'">'+g[0]+'</button>';
 }).join('');
@@ -236,7 +237,7 @@ $('grades').addEventListener('click', function(e){
 });
 function pick(g){
  grade = g; exp = null;
- setBrand(DS_ONLY || DS_GRADES.indexOf(grade)>=0);
+ setBrand(DS_ONLY);
  press($('grades'),'data-g',grade); press($('exp'),'data-e','');
  hide(); $('s-closed').hidden = true;
  if (full.indexOf(grade)>=0) { $('closed-g').textContent = grade; $('s-closed').hidden = false; return; }
@@ -254,7 +255,7 @@ $('exp').addEventListener('click', function(e){
 function showTimes(){
  var key = (GRADES.filter(function(g){return g[0]===grade})[0]||[])[1];
  var list = [];
- if (FIXED_START[grade]) list = [FIXED_START[grade]];
+ if (FIXED_START[grade] && (DS_ONLY || grade==='초4')) list = [FIXED_START[grade]];
  else classes.forEach(function(c){ if (c.grade===key && list.indexOf(c.start)<0) list.push(c.start); });
  list.sort(function(a,b){ return parseFloat(a.replace(':','.'))-parseFloat(b.replace(':','.')); });
  $('times').innerHTML = list.length
